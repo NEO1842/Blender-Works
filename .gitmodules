@@ -16,3 +16,5 @@
 [submodule "Blender-Mysterious"]
 	path = Blender-Mysterious
 	url = https://github.com/NEO1842/Blender-Mysterious
+[submodule "Submodule-Forge"]
+	branch = main
