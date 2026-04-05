@@ -13,3 +13,6 @@
 [submodule "Blender-Cybercore"]
 	path = Blender-Cybercore
 	url = https://github.com/NEO1842/Blender-Cybercore
+[submodule "Blender-Mysterious"]
+	path = Blender-Mysterious
+	url = https://github.com/NEO1842/Blender-Mysterious
