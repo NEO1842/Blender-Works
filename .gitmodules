@@ -18,3 +18,6 @@
 	url = https://github.com/NEO1842/Blender-Mysterious
 [submodule "Submodule-Forge"]
 	branch = main
+[submodule "Blender-Nebula-Gas-Cloud"]
+	path = Blender-Nebula-Gas-Cloud
+	url = https://github.com/NEO1842/Blender-Nebula-Gas-Cloud
