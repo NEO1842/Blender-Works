@@ -87,7 +87,7 @@ View Project.<br>
 <img src="./Catalog%20image/Nebula Gas Cloud.png" width="350">
 </a>
 <br>
-<b>Blender Cybercore</b><br>
+<b>Blender Nebula Gas Cloud</b><br>
 View Project.<br>
 プロジェクトを見る<br><br>
 </td>
