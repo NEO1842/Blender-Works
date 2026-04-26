@@ -93,16 +93,16 @@ View Project.<br>
 </td>
 </tr>
 
+<tr>
 <td align="center" style="padding:20px;">
-<a href="https://github.com/NEO1842/Blender-Nebula-Gas-Cloud">
-<img src="./Catalog%20image/Nebula Gas Cloud.png" width="350">
+<a href="https://github.com/NEO1842/Blender-Mysterious">
+<img src="./Catalog%20image/Mysterious.png" width="350">
 </a>
 <br>
-<b>Blender Nebula Gas Cloud</b><br>
+<b>Mysterious</b><br>
 View Project.<br>
 プロジェクトを見る<br><br>
 </td>
-</tr>
 
 </table>
 
