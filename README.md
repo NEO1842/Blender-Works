@@ -95,8 +95,8 @@ View Project.<br>
 
 <tr>
 <td align="center" style="padding:20px;">
-<a href="https://github.com/NEO1842/Blender-Mysterious">
-<img src="./Catalog%20image/Mysterious.png" width="350">
+<a href="https://github.com/NEO1842/Blender-Fire-Energy-Sphere">
+<img src="./Catalog%20image/Fire%20Energy%20Sphere.png" width="350">
 </a>
 <br>
 <b>Mysterious</b><br>
