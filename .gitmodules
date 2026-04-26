@@ -21,6 +21,3 @@
 [submodule "Blender-Nebula-Gas-Cloud"]
 	path = Blender-Nebula-Gas-Cloud
 	url = https://github.com/NEO1842/Blender-Nebula-Gas-Cloud
-[submodule "Blender-Fire-Energy-Sphere"]
-	path = Blender-Fire-Energy-Sphere
-	url = https://github.com/NEO1842/Blender-Fire-Energy-Sphere
