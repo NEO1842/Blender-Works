@@ -99,7 +99,7 @@ View Project.<br>
 <img src="./Catalog%20image/Fire%20Energy%20Sphere.png" width="350">
 </a>
 <br>
-<b>Mysterious</b><br>
+<b>Fire Energy Sphere</b><br>
 View Project.<br>
 プロジェクトを見る<br><br>
 </td>
