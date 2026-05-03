@@ -24,3 +24,6 @@
 [submodule "Blender-Fire-Energy-Sphere"]
 	path = Blender-Fire-Energy-Sphere
 	url = https://github.com/NEO1842/Blender-Fire-Energy-Sphere
+[submodule "Blender-Force"]
+	path = Blender-Force
+	url = https://github.com/NEO1842/Blender-Force
