@@ -27,3 +27,6 @@
 [submodule "Blender-Force"]
 	path = Blender-Force
 	url = https://github.com/NEO1842/Blender-Force
+[submodule "Blender-Quantum-Spark-Field"]
+	path = Blender-Quantum-Spark-Field
+	url = https://github.com/NEO1842/Blender-Quantum-Spark-Field
