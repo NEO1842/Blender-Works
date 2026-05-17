@@ -1,10 +1,8 @@
-```yaml
 name: Update Submodules
 
 on:
   schedule:
-    # Every 3 days
-    - cron: "0 0 */3 * *"
+    - cron: '0 0 */3 * *'
 
   workflow_dispatch:
 
