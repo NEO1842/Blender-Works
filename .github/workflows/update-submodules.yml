@@ -82,68 +82,93 @@ jobs:
 
             const hasChanges = (process.env.REPORT || "").trim().length > 0;
 
-            const items = (process.env.REPORT || "")
-              .split(";")
-              .filter(Boolean)
-              .map(line => {
-                const [path, oldC, newC] = line.split("|");
+            const entries = (process.env.REPORT || "").split(";").filter(Boolean);
 
-                return `
-                  <div style="background:#fff;padding:14px;border-radius:12px;margin:10px 0">
-
-                    <div style="text-align:center;font-size:20px;font-weight:bold">
-                      🚦 Status: UPDATED
-                    </div>
-
-                    <div style="margin-top:10px;font-weight:bold">
+            const items = entries.map(line => {
+              const [path, oldC, newC] = line.split("|");
+              return `
+                <div style="border:1px solid #e8e8e8;border-radius:12px;overflow:hidden;margin-bottom:12px;">
+                  <div style="padding:12px 16px;background:#f8f8f8;border-bottom:1px solid #e8e8e8;display:table;width:100%;box-sizing:border-box;">
+                    <span style="display:table-cell;font-family:monospace;font-size:14px;font-weight:700;color:#1a1a2e;">
                       📦 ${path}
-                    </div>
-
-                    <div style="margin-top:6px">
-                      🔄 <code>${oldC}</code> → <code>${newC}</code>
-                    </div>
-
-                    <div style="text-align:center;margin-top:12px">
-                      <a href="https://github.com/${context.repo.owner}/${path}/tree/${newC}"
-                         style="padding:8px 12px;background:#3498db;color:#fff;
-                                text-decoration:none;border-radius:8px;display:inline-block">
-                        🔗 Open Submodule
-                      </a>
-                    </div>
-
+                    </span>
+                    <span style="display:table-cell;text-align:right;">
+                      <span style="font-size:11px;background:#e6f1fb;color:#185fa5;padding:3px 10px;border-radius:20px;font-weight:700;letter-spacing:0.04em;">
+                        UPDATED
+                      </span>
+                    </span>
                   </div>
-                `;
-              }).join("");
+                  <div style="padding:14px 16px;background:#ffffff;display:table;width:100%;box-sizing:border-box;">
+                    <span style="display:table-cell;vertical-align:middle;">
+                      <span style="font-family:monospace;font-size:13px;background:#f4f4f4;color:#666666;padding:3px 10px;border-radius:6px;">
+                        ${oldC}
+                      </span>
+                      <span style="color:#aaaaaa;font-size:14px;padding:0 6px;">→</span>
+                      <span style="font-family:monospace;font-size:13px;background:#eaf3de;color:#27500a;padding:3px 10px;border-radius:6px;font-weight:700;">
+                        ${newC}
+                      </span>
+                    </span>
+                    <span style="display:table-cell;text-align:right;vertical-align:middle;">
+                      <a href="https://github.com/${context.repo.owner}/${path}/tree/${newC}"
+                         style="font-size:12px;color:#185fa5;text-decoration:none;padding:5px 12px;border:1px solid #b5d4f4;border-radius:8px;white-space:nowrap;">
+                        🔗 Open
+                      </a>
+                    </span>
+                  </div>
+                </div>
+              `;
+            }).join("");
+
+            const today = new Date().toISOString().slice(0, 10);
 
             const html = `
-              <div style="font-family:Arial;background:#f6f7fb;padding:20px">
-                <div style="max-width:720px;margin:auto">
+              <!DOCTYPE html>
+              <html lang="ja">
+              <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+              <body style="margin:0;padding:0;background:#f0f2f5;">
+                <div style="background:#f0f2f5;padding:32px 16px;font-family:Arial,sans-serif;">
+                  <div style="max-width:600px;margin:0 auto;">
 
-                  <!-- TITLE -->
-                  <div style="text-align:center;font-size:22px;font-weight:bold">
-                    📦 Submodules
+                    <!-- Header -->
+                    <div style="background:#1a1a2e;border-radius:16px 16px 0 0;padding:28px 32px 20px;text-align:center;">
+                      <div style="font-size:11px;letter-spacing:0.12em;color:#8888aa;text-transform:uppercase;margin-bottom:8px;">
+                        GitHub Actions
+                      </div>
+                      <div style="font-size:22px;font-weight:700;color:#ffffff;">
+                        Submodule Update Report
+                      </div>
+                      <div style="margin-top:8px;font-size:12px;color:#8888aa;">
+                        ${today} · auto triggered by schedule
+                      </div>
+                    </div>
+
+                    <!-- Status Banner -->
+                    <div style="background:${hasChanges ? '#12b76a' : '#888888'};padding:10px 32px;text-align:center;">
+                      <span style="font-size:14px;font-weight:700;color:#ffffff;letter-spacing:0.04em;">
+                        ${hasChanges ? `✅ ${entries.length} submodule(s) updated` : '✨ No changes detected'}
+                      </span>
+                    </div>
+
+                    <!-- Body -->
+                    <div style="background:#ffffff;border:1px solid #e8e8e8;border-top:none;border-radius:0 0 16px 16px;padding:24px 28px;">
+
+                      ${hasChanges ? items : `
+                        <div style="text-align:center;padding:24px 0;color:#888888;font-size:14px;">
+                          All submodules are already up to date.
+                        </div>
+                      `}
+
+                      <!-- Footer -->
+                      <div style="border-top:1px solid #eeeeee;margin-top:8px;padding-top:14px;display:table;width:100%;box-sizing:border-box;">
+                        <span style="display:table-cell;font-size:11px;color:#aaaaaa;">Sent by GitHub Actions</span>
+                        <span style="display:table-cell;text-align:right;font-size:11px;color:#aaaaaa;">Auto update · every 3 days</span>
+                      </div>
+
+                    </div>
                   </div>
-
-                  <div style="text-align:center;color:#999;margin:8px 0">
-                    ────────────────────────────────────────────
-                  </div>
-
-                  <!-- STATUS -->
-                  <div style="text-align:center;font-size:18px;font-weight:bold;margin-bottom:12px">
-                    🚦 Status: ${hasChanges ? 'UPDATED' : 'NO CHANGES'}
-                  </div>
-
-                  <!-- CONTENT -->
-                  ${
-                    hasChanges
-                      ? items
-                      : `<div style="background:#fff;padding:14px;border-radius:12px;text-align:center;color:#888">
-                          ✨ No updates detected
-                        </div>`
-                  }
-
                 </div>
-              </div>
+              </body>
+              </html>
             `;
 
             const transporter = nodemailer.createTransport({
@@ -157,7 +182,7 @@ jobs:
             await transporter.sendMail({
               from: process.env.GMAIL_USER,
               to: process.env.GMAIL_USER,
-              subject: "🔄 Submodule Update Report",
+              subject: `🔄 Submodule Update Report · ${today}`,
               html
             });
 
