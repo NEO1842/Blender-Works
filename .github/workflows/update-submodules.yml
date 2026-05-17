@@ -1,73 +1,4 @@
-name: Update Submodules
-
-on:
-  schedule:
-    - cron: '0 0 */3 * *'
-  workflow_dispatch:
-
-permissions:
-  contents: write
-
-jobs:
-  update-submodules:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Capture before state
-        run: git submodule status --recursive > before.txt
-
-      - name: Update submodules
-        run: git submodule update --init --recursive --remote
-
-      - name: Capture after state
-        run: git submodule status --recursive > after.txt
-
-      - name: Generate report data
-        id: report
-        shell: bash
-        run: |
-          REPORT=""
-          HAS_CHANGES="false"
-
-          while read -r oldLine && read -r newLine <&3; do
-            oldCommit=$(echo "$oldLine" | awk '{print $1}' | tr -d '+-')
-            newCommit=$(echo "$newLine" | awk '{print $1}' | tr -d '+-')
-            path=$(echo "$newLine" | awk '{print $2}')
-
-            if [[ "$oldCommit" != "$newCommit" && "$oldCommit" != "" ]]; then
-              REPORT="${REPORT}${path}|${oldCommit:0:7}|${newCommit:0:7}|changed;"
-              HAS_CHANGES="true"
-            else
-              REPORT="${REPORT}${path}|${newCommit:0:7}|${newCommit:0:7}|unchanged;"
-            fi
-          done < before.txt 3< after.txt
-
-          echo "REPORT=$REPORT" >> $GITHUB_OUTPUT
-          echo "HAS_CHANGES=$HAS_CHANGES" >> $GITHUB_OUTPUT
-
-      - name: Commit changes
-        if: steps.report.outputs.HAS_CHANGES == 'true'
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          git add -A
-          git diff --cached --quiet && exit 0
-
-          git commit -m "🔄 Auto update submodules"
-          git push
-
-      - name: Install nodemailer
-        run: npm install nodemailer
-
-      - name: Send mail
+- name: Send mail
         uses: actions/github-script@v7
         env:
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
@@ -80,7 +11,9 @@ jobs:
 
             const entries = (process.env.REPORT || "").split(";").filter(Boolean);
             const hasChanges = process.env.HAS_CHANGES === "true";
-            const changedCount = entries.filter(e => e.split("|")[3] === "changed").length;
+
+            const changed   = entries.filter(e => e.split("|")[3] === "changed");
+            const unchanged = entries.filter(e => e.split("|")[3] === "unchanged");
 
             const today = new Date().toLocaleDateString("ja-JP", {
               year: "numeric", month: "long", day: "numeric", timeZone: "Asia/Tokyo"
@@ -91,48 +24,44 @@ jobs:
 
             const parentRepoUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}`;
 
-            const cards = entries.map((line, i) => {
+            const makeCard = (line, i) => {
               const [path, oldC, newC, status] = line.split("|");
               const repoName = path.split("/").pop();
               const isChanged = status === "changed";
-
               return `
                 <tr>
                   <td style="padding: 0 0 14px 0;">
                     <table width="100%" cellpadding="0" cellspacing="0" border="0"
-                      style="background: #ffffff;
-                             border-radius: 12px;
-                             border: 2px solid ${isChanged ? "#16a34a" : "#d1d5db"};
-                             overflow: hidden;">
-
-                      <!-- カードヘッダー -->
+                      style="background:#ffffff; border-radius:12px;
+                             border:2px solid ${isChanged ? "#16a34a" : "#d1d5db"};
+                             overflow:hidden;">
                       <tr>
-                        <td style="background: ${isChanged ? "#f0fdf4" : "#f9fafb"};
-                                   padding: 16px 22px;
-                                   border-bottom: 2px solid ${isChanged ? "#16a34a" : "#d1d5db"};">
+                        <td style="background:${isChanged ? "#f0fdf4" : "#f9fafb"};
+                                   padding:16px 22px;
+                                   border-bottom:2px solid ${isChanged ? "#16a34a" : "#d1d5db"};">
                           <table width="100%" cellpadding="0" cellspacing="0">
                             <tr>
                               <td>
-                                <div style="font-size: 10px; color: #6b7280; letter-spacing: 0.1em;
-                                            text-transform: uppercase; font-weight: 700; margin-bottom: 5px;
-                                            font-family: Arial, sans-serif;">
+                                <div style="font-size:10px;color:#6b7280;letter-spacing:0.1em;
+                                            text-transform:uppercase;font-weight:700;margin-bottom:5px;
+                                            font-family:Arial,sans-serif;">
                                   SUBMODULE #${String(i + 1).padStart(2, "0")}
                                 </div>
-                                <div style="font-size: 19px; font-weight: 800; color: #111827;
-                                            font-family: 'Courier New', monospace; letter-spacing: -0.01em;">
+                                <div style="font-size:19px;font-weight:800;color:#111827;
+                                            font-family:'Courier New',monospace;">
                                   📦 ${repoName}
                                 </div>
-                                <div style="font-size: 12px; color: #6b7280; margin-top: 3px;
-                                            font-family: 'Courier New', monospace;">
+                                <div style="font-size:12px;color:#6b7280;margin-top:3px;
+                                            font-family:'Courier New',monospace;">
                                   ${path}
                                 </div>
                               </td>
-                              <td style="text-align: right; vertical-align: top;">
-                                <span style="display: inline-block;
-                                             background: ${isChanged ? "#16a34a" : "#6b7280"};
-                                             color: #ffffff; font-size: 11px; font-weight: 800;
-                                             padding: 5px 14px; border-radius: 6px;
-                                             letter-spacing: 0.08em; font-family: Arial, sans-serif;">
+                              <td style="text-align:right;vertical-align:top;">
+                                <span style="display:inline-block;
+                                             background:${isChanged ? "#16a34a" : "#6b7280"};
+                                             color:#ffffff;font-size:11px;font-weight:800;
+                                             padding:5px 14px;border-radius:6px;
+                                             letter-spacing:0.08em;font-family:Arial,sans-serif;">
                                   ${isChanged ? "✅ UPDATED" : "— NO CHANGE"}
                                 </span>
                               </td>
@@ -140,44 +69,38 @@ jobs:
                           </table>
                         </td>
                       </tr>
-
-                      <!-- コミットハッシュ -->
                       <tr>
-                        <td style="padding: 20px 22px;">
+                        <td style="padding:20px 22px;">
                           <table width="100%" cellpadding="0" cellspacing="0">
                             <tr>
-                              <td style="text-align: center; width: 45%;">
-                                <div style="font-size: 10px; color: #6b7280; text-transform: uppercase;
-                                            letter-spacing: 0.1em; font-weight: 700; margin-bottom: 8px;
-                                            font-family: Arial, sans-serif;">
-                                  Before
-                                </div>
-                                <div style="background: #f3f4f6; color: #374151;
-                                            font-family: 'Courier New', monospace;
-                                            font-size: 22px; font-weight: 800;
-                                            padding: 12px 16px; border-radius: 8px;
-                                            border: 2px solid #d1d5db;
-                                            letter-spacing: 0.04em; display: inline-block;">
+                              <td style="text-align:center;width:45%;">
+                                <div style="font-size:10px;color:#6b7280;text-transform:uppercase;
+                                            letter-spacing:0.1em;font-weight:700;margin-bottom:8px;
+                                            font-family:Arial,sans-serif;">Before</div>
+                                <div style="background:#f3f4f6;color:#374151;
+                                            font-family:'Courier New',monospace;
+                                            font-size:22px;font-weight:800;
+                                            padding:12px 16px;border-radius:8px;
+                                            border:2px solid #d1d5db;
+                                            letter-spacing:0.04em;display:inline-block;">
                                   ${oldC}
                                 </div>
                               </td>
-                              <td style="text-align: center; width: 10%;">
-                                <div style="font-size: 26px; color: #9ca3af; font-weight: 700;">→</div>
+                              <td style="text-align:center;width:10%;">
+                                <div style="font-size:26px;color:#9ca3af;font-weight:700;">→</div>
                               </td>
-                              <td style="text-align: center; width: 45%;">
-                                <div style="font-size: 10px; text-transform: uppercase;
-                                            letter-spacing: 0.1em; font-weight: 700; margin-bottom: 8px;
-                                            color: ${isChanged ? "#15803d" : "#6b7280"};
-                                            font-family: Arial, sans-serif;">
-                                  After
-                                </div>
-                                <div style="background: ${isChanged ? "#dcfce7" : "#f3f4f6"};
-                                             color: ${isChanged ? "#14532d" : "#374151"};
-                                             font-family: 'Courier New', monospace;
-                                             font-size: 22px; font-weight: 800;
-                                             padding: 12px 16px; border-radius: 8px;
-                                             border: 2px solid ${isChanged ? "#16a34a" : "#d1d5db"};
-                                             letter-spacing: 0.04em; display: inline-block;">
+                              <td style="text-align:center;width:45%;">
+                                <div style="font-size:10px;text-transform:uppercase;
+                                            letter-spacing:0.1em;font-weight:700;margin-bottom:8px;
+                                            color:${isChanged ? "#15803d" : "#6b7280"};
+                                            font-family:Arial,sans-serif;">After</div>
+                                <div style="background:${isChanged ? "#dcfce7" : "#f3f4f6"};
+                                             color:${isChanged ? "#14532d" : "#374151"};
+                                             font-family:'Courier New',monospace;
+                                             font-size:22px;font-weight:800;
+                                             padding:12px 16px;border-radius:8px;
+                                             border:2px solid ${isChanged ? "#16a34a" : "#d1d5db"};
+                                             letter-spacing:0.04em;display:inline-block;">
                                   ${newC}
                                 </div>
                               </td>
@@ -185,118 +108,153 @@ jobs:
                           </table>
                         </td>
                       </tr>
-
-                      <!-- ボタン -->
                       <tr>
-                        <td style="padding: 0 22px 18px 22px; text-align: right;">
+                        <td style="padding:0 22px 18px 22px;text-align:right;">
                           <a href="https://github.com/${context.repo.owner}/${path}/tree/${newC}"
-                             style="display: inline-block; background: #1d4ed8;
-                                    color: #ffffff; font-size: 13px; font-weight: 700;
-                                    text-decoration: none; padding: 9px 20px;
-                                    border-radius: 8px; letter-spacing: 0.03em;
-                                    border: 2px solid #1e40af;
-                                    font-family: Arial, sans-serif;">
+                             style="display:inline-block;background:#1d4ed8;
+                                    color:#ffffff;font-size:13px;font-weight:700;
+                                    text-decoration:none;padding:9px 20px;
+                                    border-radius:8px;border:2px solid #1e40af;
+                                    letter-spacing:0.03em;font-family:Arial,sans-serif;">
                             🔗 このサブモジュールを開く
                           </a>
                         </td>
                       </tr>
-
                     </table>
                   </td>
                 </tr>
               `;
-            }).join("");
+            };
+
+            const changedCards   = changed.map((line, i) => makeCard(line, i));
+            const unchangedCards = unchanged.map((line, i) => makeCard(line, i));
+
+            // 未更新をまとめた折りたたみっぽいボックス
+            const unchangedSection = unchanged.length === 0 ? "" : `
+              <tr>
+                <td style="padding: 0 0 14px 0;">
+                  <table width="100%" cellpadding="0" cellspacing="0" border="0"
+                    style="border-radius:12px;border:2px solid #d1d5db;overflow:hidden;">
+                    <!-- 未更新セクションヘッダー -->
+                    <tr>
+                      <td style="background:#f3f4f6;padding:14px 22px;
+                                 border-bottom:2px solid #d1d5db;">
+                        <table width="100%" cellpadding="0" cellspacing="0">
+                          <tr>
+                            <td>
+                              <div style="font-size:14px;font-weight:800;color:#4b5563;
+                                          font-family:Arial,sans-serif;">
+                                — 変更なし &nbsp;
+                                <span style="font-size:12px;font-weight:600;color:#9ca3af;">
+                                  (${unchanged.length} 件)
+                                </span>
+                              </div>
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+                    <!-- 未更新カード一覧 -->
+                    <tr>
+                      <td style="background:#fafafa;padding:16px 18px 2px 18px;">
+                        <table width="100%" cellpadding="0" cellspacing="0">
+                          ${unchangedCards.join("")}
+                        </table>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            `;
 
             const html = `
               <!DOCTYPE html>
               <html lang="ja">
               <head>
                 <meta charset="UTF-8">
-                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <meta name="viewport" content="width=device-width,initial-scale=1.0">
               </head>
-              <body style="margin:0; padding:0; background:#e5e7eb;">
+              <body style="margin:0;padding:0;background:#e5e7eb;">
                 <table width="100%" cellpadding="0" cellspacing="0" border="0"
-                       style="background: #e5e7eb; padding: 36px 16px;">
+                       style="background:#e5e7eb;padding:36px 16px;">
                   <tr>
                     <td align="center">
                       <table width="640" cellpadding="0" cellspacing="0" border="0"
-                             style="max-width: 640px; width: 100%;">
+                             style="max-width:640px;width:100%;">
 
-                        <!-- ═══ HEADER ═══ -->
+                        <!-- HEADER -->
                         <tr>
-                          <td style="background: #0f172a;
-                                     border-radius: 14px 14px 0 0;
-                                     padding: 32px 36px 28px;
-                                     text-align: center;
-                                     border: 2px solid #1e293b;
-                                     border-bottom: none;">
-                            <div style="font-size: 12px; letter-spacing: 0.14em; color: #94a3b8;
-                                        text-transform: uppercase; font-weight: 700; margin-bottom: 10px;
-                                        font-family: Arial, sans-serif;">
+                          <td style="background:#0f172a;border-radius:14px 14px 0 0;
+                                     padding:32px 36px 28px;text-align:center;
+                                     border:2px solid #1e293b;border-bottom:none;">
+                            <div style="font-size:12px;letter-spacing:0.14em;color:#94a3b8;
+                                        text-transform:uppercase;font-weight:700;margin-bottom:10px;
+                                        font-family:Arial,sans-serif;">
                               GitHub Actions · Auto Report
                             </div>
-                            <div style="font-size: 32px; font-weight: 900; color: #f8fafc;
-                                        letter-spacing: -0.02em; margin-bottom: 10px;
-                                        font-family: Arial, sans-serif;">
+                            <div style="font-size:32px;font-weight:900;color:#f8fafc;
+                                        letter-spacing:-0.02em;margin-bottom:10px;
+                                        font-family:Arial,sans-serif;">
                               🔄 Submodule Update
                             </div>
-                            <div style="font-size: 14px; color: #64748b; margin-bottom: 18px;
-                                        font-family: Arial, sans-serif;">
+                            <div style="font-size:14px;color:#64748b;margin-bottom:18px;
+                                        font-family:Arial,sans-serif;">
                               ${today} &nbsp;·&nbsp; ${timeNow} JST
                             </div>
-                            <!-- 親リポジトリリンク -->
                             <a href="${parentRepoUrl}"
-                               style="display: inline-block; background: #1e293b;
-                                      color: #93c5fd; font-size: 13px; font-weight: 700;
-                                      text-decoration: none; padding: 9px 22px;
-                                      border-radius: 8px; border: 2px solid #3b82f6;
-                                      letter-spacing: 0.03em; font-family: Arial, sans-serif;">
+                               style="display:inline-block;background:#1e293b;
+                                      color:#93c5fd;font-size:13px;font-weight:700;
+                                      text-decoration:none;padding:9px 22px;
+                                      border-radius:8px;border:2px solid #3b82f6;
+                                      letter-spacing:0.03em;font-family:Arial,sans-serif;">
                               🏠 ${context.repo.owner}/${context.repo.repo} を開く
                             </a>
                           </td>
                         </tr>
 
-                        <!-- ═══ STATUS BANNER ═══ -->
+                        <!-- STATUS BANNER -->
                         <tr>
-                          <td style="background: ${hasChanges ? "#16a34a" : "#4b5563"};
-                                     padding: 15px 36px; text-align: center;
-                                     border-left: 2px solid ${hasChanges ? "#15803d" : "#374151"};
-                                     border-right: 2px solid ${hasChanges ? "#15803d" : "#374151"};">
-                            <span style="font-size: 17px; font-weight: 800; color: #ffffff;
-                                         letter-spacing: 0.04em; font-family: Arial, sans-serif;">
+                          <td style="background:${hasChanges ? "#16a34a" : "#4b5563"};
+                                     padding:15px 36px;text-align:center;
+                                     border-left:2px solid ${hasChanges ? "#15803d" : "#374151"};
+                                     border-right:2px solid ${hasChanges ? "#15803d" : "#374151"};">
+                            <span style="font-size:17px;font-weight:800;color:#ffffff;
+                                         letter-spacing:0.04em;font-family:Arial,sans-serif;">
                               ${hasChanges
-                                ? `✅ &nbsp;${changedCount} 件更新 &nbsp;/&nbsp; 全 ${entries.length} 件`
+                                ? `✅ &nbsp;${changed.length} 件更新 &nbsp;/&nbsp; 全 ${entries.length} 件`
                                 : `✨ &nbsp;変更なし &nbsp;/&nbsp; 全 ${entries.length} 件`}
                             </span>
                           </td>
                         </tr>
 
-                        <!-- ═══ BODY ═══ -->
+                        <!-- BODY -->
                         <tr>
-                          <td style="background: #f9fafb;
-                                     border: 2px solid #d1d5db;
-                                     border-top: none;
-                                     border-radius: 0 0 14px 14px;
-                                     padding: 24px 28px;">
-
+                          <td style="background:#f9fafb;
+                                     border:2px solid #d1d5db;border-top:none;
+                                     border-radius:0 0 14px 14px;padding:24px 28px;">
                             <table width="100%" cellpadding="0" cellspacing="0" border="0">
-                              ${cards}
+
+                              <!-- 更新済みカード（上） -->
+                              ${changedCards.join("")}
+
+                              <!-- 未更新まとめボックス（下） -->
+                              ${unchangedSection}
+
                             </table>
 
                             <!-- FOOTER -->
                             <table width="100%" cellpadding="0" cellspacing="0" border="0"
-                                   style="border-top: 2px solid #e5e7eb; padding-top: 18px; margin-top: 4px;">
+                                   style="border-top:2px solid #e5e7eb;padding-top:18px;margin-top:4px;">
                               <tr>
-                                <td style="font-size: 12px; color: #9ca3af; font-family: Arial, sans-serif;">
+                                <td style="font-size:12px;color:#9ca3af;font-family:Arial,sans-serif;">
                                   🤖 Sent by GitHub Actions
                                 </td>
-                                <td style="text-align: right; font-size: 12px; color: #9ca3af;
-                                           font-family: Arial, sans-serif;">
+                                <td style="text-align:right;font-size:12px;color:#9ca3af;
+                                           font-family:Arial,sans-serif;">
                                   スケジュール: 3日ごと
                                 </td>
                               </tr>
                             </table>
-
                           </td>
                         </tr>
 
@@ -319,7 +277,7 @@ jobs:
             await transporter.sendMail({
               from: `"GitHub Actions 🤖" <${process.env.GMAIL_USER}>`,
               to: process.env.GMAIL_USER,
-              subject: `🔄 Submodule Report · ${changedCount}件更新 / 全${entries.length}件 · ${today}`,
+              subject: `🔄 Submodule Report · ${changed.length}件更新 / 全${entries.length}件 · ${today}`,
               html
             });
 
