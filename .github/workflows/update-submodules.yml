@@ -69,6 +69,10 @@ jobs:
           git commit -m "🔄 Auto update submodules"
           git push
 
+      - name: Install nodemailer        # ← ✅ これを追加！
+        if: steps.changes.outputs.changed == 'true'
+        run: npm install nodemailer
+
       - name: Send mail
         if: steps.changes.outputs.changed == 'true'
         uses: actions/github-script@v7
