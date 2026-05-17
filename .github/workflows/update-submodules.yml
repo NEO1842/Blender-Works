@@ -46,7 +46,6 @@ jobs:
 
             if [[ "$oldCommit" != "$newCommit" && "$oldCommit" != "" ]]; then
               REPORT="${REPORT}<div style='background:#fff;padding:14px;margin:10px 0;border-radius:10px;box-shadow:0 2px 6px rgba(0,0,0,0.08)'>
-
 📦 <b>${path}</b><br/>
 🔄 <code>${oldCommit:0:7}</code> → <code>${newCommit:0:7}</code><br/>
 
