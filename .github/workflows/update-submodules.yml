@@ -32,7 +32,7 @@ jobs:
       - name: Capture after state
         run: git submodule status --recursive > after.txt
 
-      # 🧠 DIFF生成（完全安定版）
+      # 🧠 REPORT生成（完全安定・安全版）
       - name: Generate report
         id: report
         shell: bash
@@ -45,14 +45,13 @@ jobs:
             path=$(echo $newLine | awk '{print $2}')
 
             if [[ "$oldCommit" != "$newCommit" && "$oldCommit" != "" ]]; then
-              REPORT+="
+              REPORT="${REPORT}
 <div style='background:#fff;padding:14px;margin:10px 0;border-radius:10px;box-shadow:0 2px 6px rgba(0,0,0,0.08)'>
 
-📦 <b>$path</b><br/>
-
+📦 <b>${path}</b><br/>
 🔄 <code>${oldCommit:0:7}</code> → <code>${newCommit:0:7}</code><br/>
 
-<a href='https://github.com/$path'
+<a href='https://github.com/${path}'
    style='display:inline-block;margin-top:8px;padding:6px 12px;background:#3498db;color:#fff;text-decoration:none;border-radius:6px;font-size:12px'>
    🔗 Open Submodule
 </a>
@@ -66,15 +65,15 @@ jobs:
           echo "$REPORT" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-      # 📊 CHANGE判定
+      # 📊 判定（100%安定版）
       - name: Detect changes
         id: changes
         shell: bash
         run: |
-          if [[ -n "${{ steps.report.outputs.REPORT }}" ]]; then
-            echo "changed=true" >> $GITHUB_OUTPUT
-          else
+          if diff -q before.txt after.txt > /dev/null; then
             echo "changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
           fi
 
       # 💾 commit
@@ -88,7 +87,7 @@ jobs:
           git commit -m "🔄 Auto update submodules"
           git push
 
-      # 💌 MAIL（All-Task風ダッシュボードUI）
+      # 💌 メール（All-Task風ダッシュボードUI）
       - name: Send mail
         if: steps.changes.outputs.changed == 'true'
         uses: actions/github-script@v7
@@ -108,7 +107,6 @@ jobs:
 
                 <h2 style="text-align:center">🔄 Submodule Update Report</h2>
 
-                <!-- STATUS CARD -->
                 <div style="background:#fff;padding:16px;border-radius:10px;margin:15px 0;box-shadow:0 2px 6px rgba(0,0,0,0.08)">
 
                   <p>🚦 Status:
@@ -117,7 +115,6 @@ jobs:
                     </b>
                   </p>
 
-                  <!-- MAIN BUTTON -->
                   <a href="https://github.com/${context.repo.owner}/${context.repo.repo}"
                      style="
                        display:inline-block;
