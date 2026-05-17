@@ -69,7 +69,7 @@ jobs:
           git commit -m "🔄 Auto update submodules"
           git push
 
-      - name: Install nodemailer        # ← ✅ これを追加！
+      - name: Install nodemailer
         if: steps.changes.outputs.changed == 'true'
         run: npm install nodemailer
 
@@ -84,93 +84,204 @@ jobs:
           script: |
             const nodemailer = require("nodemailer");
 
-            const hasChanges = (process.env.REPORT || "").trim().length > 0;
-
             const entries = (process.env.REPORT || "").split(";").filter(Boolean);
+            const hasChanges = entries.length > 0;
+            const today = new Date().toLocaleDateString("ja-JP", {
+              year: "numeric", month: "long", day: "numeric",
+              timeZone: "Asia/Tokyo"
+            });
+            const timeNow = new Date().toLocaleTimeString("ja-JP", {
+              hour: "2-digit", minute: "2-digit",
+              timeZone: "Asia/Tokyo"
+            });
 
-            const items = entries.map(line => {
+            const cards = entries.map((line, i) => {
               const [path, oldC, newC] = line.split("|");
+              const repoName = path.split("/").pop();
               return `
-                <div style="border:1px solid #e8e8e8;border-radius:12px;overflow:hidden;margin-bottom:12px;">
-                  <div style="padding:12px 16px;background:#f8f8f8;border-bottom:1px solid #e8e8e8;display:table;width:100%;box-sizing:border-box;">
-                    <span style="display:table-cell;font-family:monospace;font-size:14px;font-weight:700;color:#1a1a2e;">
-                      📦 ${path}
-                    </span>
-                    <span style="display:table-cell;text-align:right;">
-                      <span style="font-size:11px;background:#e6f1fb;color:#185fa5;padding:3px 10px;border-radius:20px;font-weight:700;letter-spacing:0.04em;">
-                        UPDATED
-                      </span>
-                    </span>
-                  </div>
-                  <div style="padding:14px 16px;background:#ffffff;display:table;width:100%;box-sizing:border-box;">
-                    <span style="display:table-cell;vertical-align:middle;">
-                      <span style="font-family:monospace;font-size:13px;background:#f4f4f4;color:#666666;padding:3px 10px;border-radius:6px;">
-                        ${oldC}
-                      </span>
-                      <span style="color:#aaaaaa;font-size:14px;padding:0 6px;">→</span>
-                      <span style="font-family:monospace;font-size:13px;background:#eaf3de;color:#27500a;padding:3px 10px;border-radius:6px;font-weight:700;">
-                        ${newC}
-                      </span>
-                    </span>
-                    <span style="display:table-cell;text-align:right;vertical-align:middle;">
-                      <a href="https://github.com/${context.repo.owner}/${path}/tree/${newC}"
-                         style="font-size:12px;color:#185fa5;text-decoration:none;padding:5px 12px;border:1px solid #b5d4f4;border-radius:8px;white-space:nowrap;">
-                        🔗 Open
-                      </a>
-                    </span>
-                  </div>
-                </div>
+                <tr>
+                  <td style="padding: 0 0 16px 0;">
+                    <table width="100%" cellpadding="0" cellspacing="0" border="0"
+                      style="background: #ffffff; border-radius: 16px; border: 1.5px solid #e2e8f0;
+                             box-shadow: 0 2px 12px rgba(0,0,0,0.06); overflow: hidden;">
+                      <!-- カードヘッダー -->
+                      <tr>
+                        <td style="background: linear-gradient(135deg, #f8faff 0%, #eef3ff 100%);
+                                   padding: 18px 24px; border-bottom: 1.5px solid #e2e8f0;">
+                          <table width="100%" cellpadding="0" cellspacing="0">
+                            <tr>
+                              <td>
+                                <div style="font-size: 11px; color: #94a3b8; letter-spacing: 0.08em;
+                                            text-transform: uppercase; margin-bottom: 4px; font-weight: 600;">
+                                  SUBMODULE #${String(i + 1).padStart(2, "0")}
+                                </div>
+                                <div style="font-size: 18px; font-weight: 700; color: #1e293b;
+                                            font-family: 'Courier New', monospace;">
+                                  📦 ${repoName}
+                                </div>
+                                <div style="font-size: 12px; color: #64748b; margin-top: 2px;">
+                                  ${path}
+                                </div>
+                              </td>
+                              <td style="text-align: right; vertical-align: top;">
+                                <span style="display: inline-block; background: linear-gradient(135deg, #22c55e, #16a34a);
+                                             color: #fff; font-size: 11px; font-weight: 700; padding: 5px 14px;
+                                             border-radius: 20px; letter-spacing: 0.06em;">
+                                  ✅ UPDATED
+                                </span>
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                      <!-- コミットハッシュ -->
+                      <tr>
+                        <td style="padding: 20px 24px;">
+                          <table width="100%" cellpadding="0" cellspacing="0">
+                            <tr>
+                              <td style="text-align: center;">
+                                <div style="margin-bottom: 6px; font-size: 11px; color: #94a3b8;
+                                            text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600;">
+                                  Before
+                                </div>
+                                <div style="display: inline-block; background: #f1f5f9; color: #475569;
+                                            font-family: 'Courier New', monospace; font-size: 20px;
+                                            font-weight: 700; padding: 10px 20px; border-radius: 10px;
+                                            letter-spacing: 0.05em; border: 1.5px solid #e2e8f0;">
+                                  ${oldC}
+                                </div>
+                              </td>
+                              <td style="text-align: center; width: 60px;">
+                                <div style="font-size: 28px; color: #cbd5e1;">→</div>
+                              </td>
+                              <td style="text-align: center;">
+                                <div style="margin-bottom: 6px; font-size: 11px; color: #94a3b8;
+                                            text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600;">
+                                  After
+                                </div>
+                                <div style="display: inline-block; background: linear-gradient(135deg, #dcfce7, #bbf7d0);
+                                             color: #15803d; font-family: 'Courier New', monospace;
+                                             font-size: 20px; font-weight: 700; padding: 10px 20px;
+                                             border-radius: 10px; letter-spacing: 0.05em;
+                                             border: 1.5px solid #86efac;">
+                                  ${newC}
+                                </div>
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                      <!-- ボタン -->
+                      <tr>
+                        <td style="padding: 0 24px 20px 24px; text-align: right;">
+                          <a href="https://github.com/${context.repo.owner}/${path}/tree/${newC}"
+                             style="display: inline-block; background: linear-gradient(135deg, #3b82f6, #2563eb);
+                                    color: #ffffff; font-size: 13px; font-weight: 700; text-decoration: none;
+                                    padding: 10px 22px; border-radius: 10px; letter-spacing: 0.03em;
+                                    box-shadow: 0 2px 8px rgba(37,99,235,0.3);">
+                            🔗 GitHub で確認する
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
               `;
             }).join("");
-
-            const today = new Date().toISOString().slice(0, 10);
 
             const html = `
               <!DOCTYPE html>
               <html lang="ja">
-              <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-              <body style="margin:0;padding:0;background:#f0f2f5;">
-                <div style="background:#f0f2f5;padding:32px 16px;font-family:Arial,sans-serif;">
-                  <div style="max-width:600px;margin:0 auto;">
+              <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              </head>
+              <body style="margin:0; padding:0; background:#f0f4f8;">
+                <table width="100%" cellpadding="0" cellspacing="0" border="0"
+                       style="background: #f0f4f8; padding: 40px 16px;">
+                  <tr>
+                    <td align="center">
+                      <table width="620" cellpadding="0" cellspacing="0" border="0"
+                             style="max-width: 620px; width: 100%;">
 
-                    <!-- Header -->
-                    <div style="background:#1a1a2e;border-radius:16px 16px 0 0;padding:28px 32px 20px;text-align:center;">
-                      <div style="font-size:11px;letter-spacing:0.12em;color:#8888aa;text-transform:uppercase;margin-bottom:8px;">
-                        GitHub Actions
-                      </div>
-                      <div style="font-size:22px;font-weight:700;color:#ffffff;">
-                        Submodule Update Report
-                      </div>
-                      <div style="margin-top:8px;font-size:12px;color:#8888aa;">
-                        ${today} · auto triggered by schedule
-                      </div>
-                    </div>
+                        <!-- ═══ HEADER ═══ -->
+                        <tr>
+                          <td style="background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
+                                     border-radius: 20px 20px 0 0; padding: 36px 40px 32px; text-align: center;">
+                            <div style="font-size: 13px; letter-spacing: 0.16em; color: #64748b;
+                                        text-transform: uppercase; font-weight: 600; margin-bottom: 12px;">
+                              GitHub Actions · Auto Report
+                            </div>
+                            <div style="font-size: 30px; font-weight: 800; color: #f8fafc;
+                                        letter-spacing: -0.02em; margin-bottom: 10px;">
+                              🔄 Submodule Update
+                            </div>
+                            <div style="font-size: 14px; color: #64748b;">
+                              ${today} &nbsp;·&nbsp; ${timeNow} JST
+                            </div>
+                          </td>
+                        </tr>
 
-                    <!-- Status Banner -->
-                    <div style="background:${hasChanges ? '#12b76a' : '#888888'};padding:10px 32px;text-align:center;">
-                      <span style="font-size:14px;font-weight:700;color:#ffffff;letter-spacing:0.04em;">
-                        ${hasChanges ? `✅ ${entries.length} submodule(s) updated` : '✨ No changes detected'}
-                      </span>
-                    </div>
+                        <!-- ═══ STATUS BANNER ═══ -->
+                        <tr>
+                          <td style="background: ${hasChanges
+                            ? "linear-gradient(135deg, #16a34a, #22c55e)"
+                            : "linear-gradient(135deg, #475569, #64748b)"};
+                                     padding: 16px 40px; text-align: center;">
+                            <span style="font-size: 16px; font-weight: 800; color: #ffffff; letter-spacing: 0.04em;">
+                              ${hasChanges
+                                ? `✅ &nbsp;${entries.length} 件のサブモジュールが更新されました`
+                                : "✨ &nbsp;変更はありませんでした"}
+                            </span>
+                          </td>
+                        </tr>
 
-                    <!-- Body -->
-                    <div style="background:#ffffff;border:1px solid #e8e8e8;border-top:none;border-radius:0 0 16px 16px;padding:24px 28px;">
+                        <!-- ═══ BODY ═══ -->
+                        <tr>
+                          <td style="background: #f8fafc; border: 1.5px solid #e2e8f0;
+                                     border-top: none; border-radius: 0 0 20px 20px; padding: 28px 32px;">
 
-                      ${hasChanges ? items : `
-                        <div style="text-align:center;padding:24px 0;color:#888888;font-size:14px;">
-                          All submodules are already up to date.
-                        </div>
-                      `}
+                            ${hasChanges ? `
+                              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                                ${cards}
+                              </table>
+                            ` : `
+                              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                                <tr>
+                                  <td style="text-align: center; padding: 40px 0;">
+                                    <div style="font-size: 48px; margin-bottom: 16px;">🎉</div>
+                                    <div style="font-size: 18px; font-weight: 700; color: #1e293b;
+                                                margin-bottom: 8px;">
+                                      すべて最新の状態です
+                                    </div>
+                                    <div style="font-size: 14px; color: #64748b;">
+                                      サブモジュールに更新はありませんでした
+                                    </div>
+                                  </td>
+                                </tr>
+                              </table>
+                            `}
 
-                      <!-- Footer -->
-                      <div style="border-top:1px solid #eeeeee;margin-top:8px;padding-top:14px;display:table;width:100%;box-sizing:border-box;">
-                        <span style="display:table-cell;font-size:11px;color:#aaaaaa;">Sent by GitHub Actions</span>
-                        <span style="display:table-cell;text-align:right;font-size:11px;color:#aaaaaa;">Auto update · every 3 days</span>
-                      </div>
+                            <!-- FOOTER -->
+                            <table width="100%" cellpadding="0" cellspacing="0" border="0"
+                                   style="border-top: 1.5px solid #e2e8f0; margin-top: 8px; padding-top: 20px;">
+                              <tr>
+                                <td style="font-size: 12px; color: #94a3b8;">
+                                  🤖 Sent by GitHub Actions
+                                </td>
+                                <td style="text-align: right; font-size: 12px; color: #94a3b8;">
+                                  スケジュール: 3日ごと
+                                </td>
+                              </tr>
+                            </table>
 
-                    </div>
-                  </div>
-                </div>
+                          </td>
+                        </tr>
+
+                      </table>
+                    </td>
+                  </tr>
+                </table>
               </body>
               </html>
             `;
@@ -184,9 +295,9 @@ jobs:
             });
 
             await transporter.sendMail({
-              from: process.env.GMAIL_USER,
+              from: `"GitHub Actions 🤖" <${process.env.GMAIL_USER}>`,
               to: process.env.GMAIL_USER,
-              subject: `🔄 Submodule Update Report · ${today}`,
+              subject: `🔄 Submodule Update · ${entries.length}件更新 · ${today}`,
               html
             });
 
