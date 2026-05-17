@@ -32,7 +32,7 @@ jobs:
       - name: Capture after state
         run: git submodule status --recursive > after.txt
 
-      # 🧠 REPORT生成
+      # 🧠 REPORT生成（+完全除去＆安全URL）
       - name: Generate report data
         id: report
         shell: bash
@@ -40,8 +40,8 @@ jobs:
           REPORT=""
 
           while read -r oldLine && read -r newLine <&3; do
-            oldCommit=$(echo "$oldLine" | awk '{print $1}')
-            newCommit=$(echo "$newLine" | awk '{print $1}')
+            oldCommit=$(echo "$oldLine" | awk '{print $1}' | tr -d '+')
+            newCommit=$(echo "$newLine" | awk '{print $1}' | tr -d '+')
             path=$(echo "$newLine" | awk '{print $2}')
 
             if [[ "$oldCommit" != "$newCommit" && "$oldCommit" != "" ]]; then
@@ -49,9 +49,7 @@ jobs:
             fi
           done < before.txt 3< after.txt
 
-          echo "REPORT<<EOF" >> $GITHUB_OUTPUT
-          echo "$REPORT" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          echo "REPORT=$REPORT" >> $GITHUB_OUTPUT
 
       # 📊 判定
       - name: Detect changes
@@ -72,13 +70,12 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
           git add -A
-
           git diff --cached --quiet && exit 0
 
           git commit -m "🔄 Auto update submodules"
           git push
 
-      # 💌 MAIL（完全UI版）
+      # 💌 MAIL（完全UI・リンク修正版）
       - name: Send mail
         if: steps.changes.outputs.changed == 'true'
         uses: actions/github-script@v7
@@ -96,6 +93,9 @@ jobs:
               .map(line => {
                 const [path, oldC, newC] = line.split("|");
 
+                const cleanOld = (oldC || "").replace("+", "");
+                const cleanNew = (newC || "").replace("+", "");
+
                 return `
                   <div style="
                     background:#fff;
@@ -105,15 +105,13 @@ jobs:
                     box-shadow:0 2px 6px rgba(0,0,0,0.08);
                   ">
 
-                    <div style="font-weight:bold;">
-                      📦 ${path}
-                    </div>
+                    <div style="font-weight:bold;">📦 ${path}</div>
 
                     <div style="margin-top:6px;color:#555;">
-                      🔄 <code>${oldC}</code> → <code>${newC}</code>
+                      🔄 <code>${cleanOld}</code> → <code>${cleanNew}</code>
                     </div>
 
-                    <a href="https://github.com/${context.repo.owner}/${path}/tree/${newC}"
+                    <a href="https://github.com/${context.repo.owner}/${path}/tree/${cleanNew}"
                        style="
                          display:inline-block;
                          margin-top:10px;
@@ -136,12 +134,9 @@ jobs:
 
             const html = `
               <div style="font-family:Arial;background:#f6f7fb;padding:20px">
-
                 <div style="max-width:720px;margin:auto">
 
-                  <h2 style="text-align:center">
-                    🔄 Submodule Update Report
-                  </h2>
+                  <h2 style="text-align:center">🔄 Submodule Update Report</h2>
 
                   <div style="
                     background:#fff;
@@ -179,26 +174,12 @@ jobs:
                   ${
                     hasChanges
                       ? items
-                      : `
-                        <div style="
-                          background:#fff;
-                          padding:14px;
-                          border-radius:12px;
-                          text-align:center;
-                          color:#999;
-                          box-shadow:0 2px 6px rgba(0,0,0,0.08)
-                        ">
+                      : `<div style="background:#fff;padding:14px;border-radius:12px;text-align:center;color:#999">
                           ✨ No updates detected
-                        </div>
-                      `
+                        </div>`
                   }
 
-                  <p style="
-                    text-align:center;
-                    color:#aaa;
-                    font-size:12px;
-                    margin-top:30px
-                  ">
+                  <p style="text-align:center;color:#aaa;font-size:12px;margin-top:30px">
                     GitHub Actions Auto Dashboard
                   </p>
 
