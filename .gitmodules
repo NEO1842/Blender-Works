@@ -30,3 +30,6 @@
 [submodule "Blender-Quantum-Spark-Field"]
 	path = Blender-Quantum-Spark-Field
 	url = https://github.com/NEO1842/Blender-Quantum-Spark-Field
+[submodule "Blender-Crystal"]
+	path = Blender-Crystal
+	url = https://github.com/NEO1842/Blender-Crystal
