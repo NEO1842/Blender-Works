@@ -80,108 +80,67 @@ jobs:
           script: |
             const nodemailer = require("nodemailer");
 
+            const hasChanges = (process.env.REPORT || "").trim().length > 0;
+
             const items = (process.env.REPORT || "")
               .split(";")
               .filter(Boolean)
               .map(line => {
                 const [path, oldC, newC] = line.split("|");
 
-                const cleanOld = (oldC || "").replace("+","");
-                const cleanNew = (newC || "").replace("+","");
-
                 return `
-                  <div style="
-                    background:#fff;
-                    padding:16px;
-                    margin:12px 0;
-                    border-radius:12px;
-                    box-shadow:0 2px 6px rgba(0,0,0,0.08);
-                    border:1px solid #eee;
-                  ">
+                  <div style="background:#fff;padding:14px;border-radius:12px;margin:10px 0">
 
-                    <div style="
-                      text-align:center;
-                      font-size:24px;
-                      font-weight:bold;
-                      margin-bottom:14px;
-                    ">
+                    <div style="text-align:center;font-size:20px;font-weight:bold">
                       🚦 Status: UPDATED
                     </div>
 
-                    <div style="
-                      font-weight:bold;
-                      font-size:20px;
-                    ">
+                    <div style="margin-top:10px;font-weight:bold">
                       📦 ${path}
                     </div>
 
-                    <div style="
-                      margin-top:6px;
-                      color:#333;
-                      font-size:19px;
-                      font-weight:600;
-                    ">
-                      🔄 <code>${cleanOld}</code> → <code>${cleanNew}</code>
+                    <div style="margin-top:6px">
+                      🔄 <code>${oldC}</code> → <code>${newC}</code>
                     </div>
 
-                    <a href="https://github.com/${context.repo.owner}/${path}/tree/${cleanNew}"
-                       style="
-                         display:inline-block;
-                         margin-top:10px;
-                         padding:8px 12px;
-                         background:#3498db;
-                         color:#fff;
-                         text-decoration:none;
-                         border-radius:8px;
-                         font-size:12px;
-                         font-weight:bold;
-                       ">
-                      🔗 Open Submodule
-                    </a>
+                    <div style="text-align:center;margin-top:12px">
+                      <a href="https://github.com/${context.repo.owner}/${path}/tree/${newC}"
+                         style="padding:8px 12px;background:#3498db;color:#fff;
+                                text-decoration:none;border-radius:8px;display:inline-block">
+                        🔗 Open Submodule
+                      </a>
+                    </div>
 
                   </div>
                 `;
               }).join("");
 
-            const hasChanges = (process.env.REPORT || "").trim().length > 0;
-
             const html = `
               <div style="font-family:Arial;background:#f6f7fb;padding:20px">
                 <div style="max-width:720px;margin:auto">
 
-                  <div style="
-                    text-align:center;
-                    font-size:24px;
-                    font-weight:bold;
-                    margin-bottom:14px;
-                  ">
+                  <!-- TITLE -->
+                  <div style="text-align:center;font-size:22px;font-weight:bold">
+                    📦 Submodules
+                  </div>
+
+                  <div style="text-align:center;color:#999;margin:8px 0">
+                    ────────────────────────────────────────────
+                  </div>
+
+                  <!-- STATUS -->
+                  <div style="text-align:center;font-size:18px;font-weight:bold;margin-bottom:12px">
                     🚦 Status: ${hasChanges ? 'UPDATED' : 'NO CHANGES'}
                   </div>
 
-                  <h3 style="
-                    text-align:center;
-                    font-size:22px;
-                    margin:12px 0;
-                  ">
-                    📦 Submodules
-                  </h3>
-
+                  <!-- CONTENT -->
                   ${
                     hasChanges
                       ? items
-                      : `<div style="background:#fff;padding:16px;border-radius:12px;text-align:center;color:#999">
+                      : `<div style="background:#fff;padding:14px;border-radius:12px;text-align:center;color:#888">
                           ✨ No updates detected
                         </div>`
                   }
-
-                  <p style="
-                    text-align:center;
-                    color:#aaa;
-                    font-size:12px;
-                    margin-top:30px
-                  ">
-                    GitHub Actions Auto Dashboard
-                  </p>
 
                 </div>
               </div>
