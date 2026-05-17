@@ -20,26 +20,22 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      # 📦 BEFORE
       - name: Capture before state
         run: git submodule status --recursive > before.txt
 
-      # 🔄 UPDATE
       - name: Update submodules
         run: git submodule update --init --recursive --remote
 
-      # 📦 AFTER
       - name: Capture after state
         run: git submodule status --recursive > after.txt
 
-      # 🧠 REPORT生成（+完全除去＆安全URL）
       - name: Generate report data
         id: report
         shell: bash
         run: |
           REPORT=""
 
-          while read -r oldLine && read -r newLine <&3; do
+          paste before.txt after.txt | while read -r oldLine newLine; do
             oldCommit=$(echo "$oldLine" | awk '{print $1}' | tr -d '+')
             newCommit=$(echo "$newLine" | awk '{print $1}' | tr -d '+')
             path=$(echo "$newLine" | awk '{print $2}')
@@ -47,14 +43,12 @@ jobs:
             if [[ "$oldCommit" != "$newCommit" && "$oldCommit" != "" ]]; then
               REPORT="${REPORT}${path}|${oldCommit:0:7}|${newCommit:0:7};"
             fi
-          done < before.txt 3< after.txt
+          done
 
           echo "REPORT=$REPORT" >> $GITHUB_OUTPUT
 
-      # 📊 判定
       - name: Detect changes
         id: changes
-        shell: bash
         run: |
           if [[ -n "${{ steps.report.outputs.REPORT }}" ]]; then
             echo "changed=true" >> $GITHUB_OUTPUT
@@ -62,7 +56,6 @@ jobs:
             echo "changed=false" >> $GITHUB_OUTPUT
           fi
 
-      # 💾 commit
       - name: Commit changes
         if: steps.changes.outputs.changed == 'true'
         run: |
@@ -75,7 +68,6 @@ jobs:
           git commit -m "🔄 Auto update submodules"
           git push
 
-      # 💌 MAIL（完全UI・リンク修正版）
       - name: Send mail
         if: steps.changes.outputs.changed == 'true'
         uses: actions/github-script@v7
@@ -93,8 +85,8 @@ jobs:
               .map(line => {
                 const [path, oldC, newC] = line.split("|");
 
-                const cleanOld = (oldC || "").replace("+", "");
-                const cleanNew = (newC || "").replace("+", "");
+                const cleanOld = (oldC || "").replace("+","");
+                const cleanNew = (newC || "").replace("+","");
 
                 return `
                   <div style="
@@ -102,12 +94,32 @@ jobs:
                     padding:14px;
                     margin:12px 0;
                     border-radius:12px;
-                    box-shadow:0 2px 6px rgba(0,0,0,0.08);
+                    box-shadow:0 2px 6px rgba(0,0,0,0.06);
+                    border:1px solid #eee;
                   ">
 
-                    <div style="font-weight:bold;">📦 ${path}</div>
+                    <div style="
+                      text-align:center;
+                      font-size:24px;
+                      font-weight:bold;
+                      margin-bottom:14px;
+                    ">
+                      🚦 Status: UPDATED
+                    </div>
 
-                    <div style="margin-top:6px;color:#555;">
+                    <div style="
+                      font-weight:bold;
+                      font-size:20px;
+                    ">
+                      📦 ${path}
+                    </div>
+
+                    <div style="
+                      margin-top:6px;
+                      color:#333;
+                      font-size:19px;
+                      font-weight:600;
+                    ">
                       🔄 <code>${cleanOld}</code> → <code>${cleanNew}</code>
                     </div>
 
@@ -130,13 +142,20 @@ jobs:
                 `;
               }).join("");
 
-            const hasChanges = items.length > 0;
+            const hasChanges = (process.env.REPORT || "").trim().length > 0;
 
             const html = `
               <div style="font-family:Arial;background:#f6f7fb;padding:20px">
                 <div style="max-width:720px;margin:auto">
 
-                  <h2 style="text-align:center">🔄 Submodule Update Report</h2>
+                  <div style="
+                    text-align:center;
+                    font-size:24px;
+                    font-weight:bold;
+                    margin-bottom:14px;
+                  ">
+                    🚦 Status: ${hasChanges ? 'UPDATED' : 'NO CHANGES'}
+                  </div>
 
                   <div style="
                     background:#fff;
@@ -145,14 +164,6 @@ jobs:
                     margin:15px 0;
                     box-shadow:0 2px 6px rgba(0,0,0,0.08)
                   ">
-
-                    <p>
-                      🚦 Status:
-                      <b style="color:${hasChanges ? '#2ecc71' : '#999'}">
-                        ${hasChanges ? 'UPDATED' : 'NO CHANGES'}
-                      </b>
-                    </p>
-
                     <a href="https://github.com/${context.repo.owner}/${context.repo.repo}"
                        style="
                          display:inline-block;
@@ -166,10 +177,15 @@ jobs:
                        ">
                       📦 Open Blender-Works
                     </a>
-
                   </div>
 
-                  <h3>📦 Submodules</h3>
+                  <h3 style="
+                    text-align:center;
+                    font-size:22px;
+                    margin:12px 0;
+                  ">
+                    📦 Submodules
+                  </h3>
 
                   ${
                     hasChanges
