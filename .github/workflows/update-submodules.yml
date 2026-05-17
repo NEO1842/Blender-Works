@@ -35,7 +35,7 @@ jobs:
         run: |
           REPORT=""
 
-          paste before.txt after.txt | while read -r oldLine newLine; do
+          while read -r oldLine && read -r newLine <&3; do
             oldCommit=$(echo "$oldLine" | awk '{print $1}' | tr -d '+')
             newCommit=$(echo "$newLine" | awk '{print $1}' | tr -d '+')
             path=$(echo "$newLine" | awk '{print $2}')
@@ -43,12 +43,13 @@ jobs:
             if [[ "$oldCommit" != "$newCommit" && "$oldCommit" != "" ]]; then
               REPORT="${REPORT}${path}|${oldCommit:0:7}|${newCommit:0:7};"
             fi
-          done
+          done < before.txt 3< after.txt
 
           echo "REPORT=$REPORT" >> $GITHUB_OUTPUT
 
       - name: Detect changes
         id: changes
+        shell: bash
         run: |
           if [[ -n "${{ steps.report.outputs.REPORT }}" ]]; then
             echo "changed=true" >> $GITHUB_OUTPUT
