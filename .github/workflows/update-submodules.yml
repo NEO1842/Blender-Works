@@ -3,7 +3,6 @@ name: Update Submodules
 on:
   schedule:
     - cron: '0 0 */3 * *'
-
   workflow_dispatch:
 
 permissions:
@@ -21,74 +20,68 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Install Nodemailer
-        run: npm install nodemailer
-
-      - name: Save old submodule commits
-        id: before
-        run: |
-          git submodule status --recursive > before.txt
-
       - name: Update submodules
-        run: |
-          git submodule update --init --recursive --remote
+        run: git submodule update --init --recursive --remote
 
-      - name: Save new submodule commits
-        id: after
-        run: |
-          git submodule status --recursive > after.txt
+      # 📌 実在submoduleだけ取得（これが重要）
+      - name: Capture submodule state (before)
+        run: git submodule status --recursive > before.txt
 
-      - name: Detect changes
-        id: changes
-        shell: bash
-        run: |
-          if [[ -n "$(git status --porcelain)" ]]; then
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-          fi
+      - name: Update again (safe refresh)
+        run: git submodule update --init --recursive --remote
 
-      - name: Generate update report
-        if: steps.changes.outputs.changed == 'true'
+      - name: Capture submodule state (after)
+        run: git submodule status --recursive > after.txt
+
+      # 📌 差分生成（正確版）
+      - name: Generate diff report
         id: report
         shell: bash
         run: |
           echo "REPORT<<EOF" >> $GITHUB_OUTPUT
 
-          while read -r oldLine && read -r newLine <&3; do
-            oldCommit=$(echo $oldLine | awk '{print $1}')
-            newCommit=$(echo $newLine | awk '{print $1}')
-            path=$(echo $newLine | awk '{print $2}')
+          awk '
+          FNR==NR {before[$2]=$1; next}
+          {
+            path=$2
+            old=before[path]
+            new=$1
 
-            if [[ "$oldCommit" != "$newCommit" ]]; then
-              echo "<div style='padding:14px;margin:12px 0;background:#fff;border-radius:10px;box-shadow:0 2px 6px rgba(0,0,0,0.08)'>" >> $GITHUB_OUTPUT
-              echo "<h3>📦 $path</h3>" >> $GITHUB_OUTPUT
-              echo "<p>🔄 <code>$oldCommit</code> → <code>$newCommit</code></p>" >> $GITHUB_OUTPUT
-              echo "</div>" >> $GITHUB_OUTPUT
-            fi
+            if (old != "" && old != new) {
+              old7=substr(old,1,7)
+              new7=substr(new,1,7)
 
-          done < before.txt 3< after.txt
+              echo "<div style=\"background:#fff;padding:14px;margin:10px 0;border-radius:10px;box-shadow:0 2px 6px rgba(0,0,0,0.08)\">"
+              echo "📦 <b>" path "</b><br/>"
+              echo "🔄 <code>" old7 "</code> → <code>" new7 "</code><br/>"
+              echo "</div>"
+            }
+          }' before.txt after.txt >> $GITHUB_OUTPUT
 
           echo "EOF" >> $GITHUB_OUTPUT
 
+      # 📌 変更有無判定（シンプルで安全）
+      - name: Detect changes
+        id: changes
+        run: |
+          if grep -q "→" <<< "${{ steps.report.outputs.REPORT }}"; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
+      # 📌 commit & push（変更時のみ）
       - name: Commit changes
         if: steps.changes.outputs.changed == 'true'
         run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
 
           git add .
-          git commit -m "Auto update submodules"
+          git commit -m "🔄 Auto update submodules"
+          git push
 
-      - name: Push changes
-        if: steps.changes.outputs.changed == 'true'
-        run: git push
-
+      # 📌 メール送信（完成UI）
       - name: Send mail
         if: steps.changes.outputs.changed == 'true'
         uses: actions/github-script@v7
@@ -100,42 +93,44 @@ jobs:
           script: |
             const nodemailer = require("nodemailer");
 
+            const hasChanges = process.env.REPORT && process.env.REPORT.includes("→");
+
             const html = `
             <div style="font-family:Arial;background:#f6f7fb;padding:20px">
-              <div style="max-width:700px;margin:auto">
+              <div style="max-width:720px;margin:auto">
 
-                <h2 style="text-align:center">
-                  🔄 Submodule Update Report
-                </h2>
+                <h2 style="text-align:center">🔄 Submodule Update Report</h2>
 
-                <hr />
-
-                <div style="
-                  background:#fff;
-                  padding:16px;
-                  border-radius:10px;
-                  margin-bottom:20px;
-                  box-shadow:0 2px 6px rgba(0,0,0,0.08)
-                ">
-                  <p>🕒 Workflow executed successfully.</p>
+                <div style="background:#fff;padding:16px;border-radius:10px;margin:15px 0;box-shadow:0 2px 6px rgba(0,0,0,0.08)">
+                  <p>🚦 Status:
+                    <b style="color:${hasChanges ? '#2ecc71' : '#999'}">
+                      ${hasChanges ? 'UPDATED' : 'NO CHANGES'}
+                    </b>
+                  </p>
 
                   <p>
-                    🔗
-                    <a href="https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}">
-                      Open GitHub Actions Run
+                    🔗 <a href="https://github.com/${context.repo.owner}/${context.repo.repo}">
+                      Open Blender-Works Repository
+                    </a>
+                  </p>
+
+                  <p>
+                    ⚙️ <a href="https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}">
+                      Open Workflow Run
                     </a>
                   </p>
                 </div>
 
-                ${process.env.REPORT}
+                <h3>📦 Submodules</h3>
 
-                <p style="
-                  text-align:center;
-                  color:#999;
-                  font-size:12px;
-                  margin-top:30px;
-                ">
-                  GitHub Actions Auto Submodule Updater
+                ${hasChanges ? process.env.REPORT : `
+                  <div style="background:#fff;padding:14px;border-radius:10px;text-align:center;color:#999">
+                    ✨ No updates detected
+                  </div>
+                `}
+
+                <p style="text-align:center;color:#aaa;font-size:12px;margin-top:30px">
+                  GitHub Actions Auto Dashboard
                 </p>
 
               </div>
