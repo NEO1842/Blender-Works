@@ -71,85 +71,85 @@ jobs:
 
           git add .
           git commit -m "🔄 Auto update submodules"
-          git push
-           - name: Send mail
-  if: steps.changes.outputs.changed == 'true'
-  uses: actions/github-script@v7
-  env:
-    GMAIL_USER: ${{ secrets.GMAIL_USER }}
-    GMAIL_PASS: ${{ secrets.GMAIL_PASS }}
-    REPORT: ${{ steps.report.outputs.REPORT }}
-  with:
-    script: |
-      const nodemailer = require("nodemailer");
+          git push      # 💌 メール（HTMLはJS側で生成）
+      - name: Send mail
+        if: steps.changes.outputs.changed == 'true'
+        uses: actions/github-script@v7
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_PASS: ${{ secrets.GMAIL_PASS }}
+          REPORT: ${{ steps.report.outputs.REPORT }}
+        with:
+          script: |
+            const nodemailer = require("nodemailer");
 
-      const items = (process.env.REPORT || "")
-        .split(";")
-        .filter(Boolean)
-        .map(line => {
-          const [path, oldC, newC] = line.split("|");
+            const items = (process.env.REPORT || "")
+              .split(";")
+              .filter(Boolean)
+              .map(line => {
+                const [path, oldC, newC] = line.split("|");
 
-          return `
-            <div style="background:#fff;padding:14px;margin:10px 0;border-radius:10px">
-              📦 <b>${path}</b><br/>
-              🔄 <code>${oldC}</code> → <code>${newC}</code><br/>
-              <a href="https://github.com/NEO1842/${path}/tree/${newC}">
-                🔗 Open Submodule
-              </a>
-            </div>
-          `;
-        }).join("");
+                return `
+                  <div style="background:#fff;padding:14px;margin:10px 0;border-radius:10px">
+                    📦 <b>${path}</b><br/>
+                    🔄 <code>${oldC}</code> → <code>${newC}</code><br/>
+                    <a href="https://github.com/NEO1842/${path}/tree/${newC}">
+                      🔗 Open Submodule
+                    </a>
+                  </div>
+                `;
+              }).join("");
 
-      const hasChanges = items.length > 0;
+            const hasChanges = items.length > 0;
 
-      const html = `
-        <div style="font-family:Arial;background:#f6f7fb;padding:20px">
-          <div style="max-width:720px;margin:auto">
+            const html = `
+              <div style="font-family:Arial;background:#f6f7fb;padding:20px">
+                <div style="max-width:720px;margin:auto">
 
-            <h2 style="text-align:center">🔄 Submodule Update Report</h2>
+                  <h2 style="text-align:center">🔄 Submodule Update Report</h2>
 
-            <div style="background:#fff;padding:16px;border-radius:10px;margin:15px 0;box-shadow:0 2px 6px rgba(0,0,0,0.08)">
-              <p>🚦 Status:
-                <b style="color:${hasChanges ? '#2ecc71' : '#999'}">
-                  ${hasChanges ? 'UPDATED' : 'NO CHANGES'}
-                </b>
-              </p>
+                  <div style="background:#fff;padding:16px;border-radius:10px;margin:15px 0;box-shadow:0 2px 6px rgba(0,0,0,0.08)">
+                    <p>🚦 Status:
+                      <b style="color:${hasChanges ? '#2ecc71' : '#999'}">
+                        ${hasChanges ? 'UPDATED' : 'NO CHANGES'}
+                      </b>
+                    </p>
 
-              <a href="https://github.com/${context.repo.owner}/${context.repo.repo}"
-                 style="display:inline-block;margin-top:10px;padding:10px 16px;background:#2ecc71;color:#fff;text-decoration:none;border-radius:8px;font-weight:bold">
-                📦 Open Blender-Works
-              </a>
-            </div>
+                    <a href="https://github.com/${context.repo.owner}/${context.repo.repo}"
+                       style="display:inline-block;margin-top:10px;padding:10px 16px;background:#2ecc71;color:#fff;text-decoration:none;border-radius:8px;font-weight:bold">
+                      📦 Open Blender-Works
+                    </a>
+                  </div>
 
-            <h3>📦 Submodules</h3>
+                  <h3>📦 Submodules</h3>
 
-            ${hasChanges ? items : `
-              <div style="background:#fff;padding:14px;border-radius:10px;text-align:center;color:#999">
-                ✨ No updates detected
+                  ${hasChanges ? items : `
+                    <div style="background:#fff;padding:14px;border-radius:10px;text-align:center;color:#999">
+                      ✨ No updates detected
+                    </div>
+                  `}
+
+                  <p style="text-align:center;color:#aaa;font-size:12px;margin-top:30px">
+                    GitHub Actions Auto Dashboard
+                  </p>
+
+                </div>
               </div>
-            `}
+            `;
 
-            <p style="text-align:center;color:#aaa;font-size:12px;margin-top:30px">
-              GitHub Actions Auto Dashboard
-            </p>
+            const transporter = nodemailer.createTransport({
+              service: "gmail",
+              auth: {
+                user: process.env.GMAIL_USER,
+                pass: process.env.GMAIL_PASS
+              }
+            });
 
-          </div>
-        </div>
-      `;
+            await transporter.sendMail({
+              from: process.env.GMAIL_USER,
+              to: process.env.GMAIL_USER,
+              subject: "🔄 Submodule Update Report",
+              html
+            });
 
-      const transporter = nodemailer.createTransport({
-        service: "gmail",
-        auth: {
-          user: process.env.GMAIL_USER,
-          pass: process.env.GMAIL_PASS
-        }
-      });
-
-      await transporter.sendMail({
-        from: process.env.GMAIL_USER,
-        to: process.env.GMAIL_USER,
-        subject: "🔄 Submodule Update Report",
-        html
-      });
-
-      console.log("Mail sent!"); 
+            console.log("Mail sent!");
