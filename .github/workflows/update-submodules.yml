@@ -32,7 +32,7 @@ jobs:
       - name: Capture after state
         run: git submodule status --recursive > after.txt
 
-      # 🧠 安全差分生成（HTMLは作らない）
+      # 🧠 REPORT生成
       - name: Generate report data
         id: report
         shell: bash
@@ -49,7 +49,9 @@ jobs:
             fi
           done < before.txt 3< after.txt
 
-          echo "REPORT=$REPORT" >> $GITHUB_OUTPUT
+          echo "REPORT<<EOF" >> $GITHUB_OUTPUT
+          echo "$REPORT" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
       # 📊 判定
       - name: Detect changes
@@ -69,9 +71,14 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          git add .
+          git add -A
+
+          git diff --cached --quiet && exit 0
+
           git commit -m "🔄 Auto update submodules"
-          git push      # 💌 メール（HTMLはJS側で生成）
+          git push
+
+      # 💌 MAIL（完全UI版）
       - name: Send mail
         if: steps.changes.outputs.changed == 'true'
         uses: actions/github-script@v7
@@ -90,12 +97,37 @@ jobs:
                 const [path, oldC, newC] = line.split("|");
 
                 return `
-                  <div style="background:#fff;padding:14px;margin:10px 0;border-radius:10px">
-                    📦 <b>${path}</b><br/>
-                    🔄 <code>${oldC}</code> → <code>${newC}</code><br/>
-                    <a href="https://github.com/NEO1842/${path}/tree/${newC}">
+                  <div style="
+                    background:#fff;
+                    padding:14px;
+                    margin:12px 0;
+                    border-radius:12px;
+                    box-shadow:0 2px 6px rgba(0,0,0,0.08);
+                  ">
+
+                    <div style="font-weight:bold;">
+                      📦 ${path}
+                    </div>
+
+                    <div style="margin-top:6px;color:#555;">
+                      🔄 <code>${oldC}</code> → <code>${newC}</code>
+                    </div>
+
+                    <a href="https://github.com/${context.repo.owner}/${path}/tree/${newC}"
+                       style="
+                         display:inline-block;
+                         margin-top:10px;
+                         padding:8px 12px;
+                         background:#3498db;
+                         color:#fff;
+                         text-decoration:none;
+                         border-radius:8px;
+                         font-size:12px;
+                         font-weight:bold;
+                       ">
                       🔗 Open Submodule
                     </a>
+
                   </div>
                 `;
               }).join("");
@@ -104,32 +136,69 @@ jobs:
 
             const html = `
               <div style="font-family:Arial;background:#f6f7fb;padding:20px">
+
                 <div style="max-width:720px;margin:auto">
 
-                  <h2 style="text-align:center">🔄 Submodule Update Report</h2>
+                  <h2 style="text-align:center">
+                    🔄 Submodule Update Report
+                  </h2>
 
-                  <div style="background:#fff;padding:16px;border-radius:10px;margin:15px 0;box-shadow:0 2px 6px rgba(0,0,0,0.08)">
-                    <p>🚦 Status:
+                  <div style="
+                    background:#fff;
+                    padding:16px;
+                    border-radius:12px;
+                    margin:15px 0;
+                    box-shadow:0 2px 6px rgba(0,0,0,0.08)
+                  ">
+
+                    <p>
+                      🚦 Status:
                       <b style="color:${hasChanges ? '#2ecc71' : '#999'}">
                         ${hasChanges ? 'UPDATED' : 'NO CHANGES'}
                       </b>
                     </p>
 
                     <a href="https://github.com/${context.repo.owner}/${context.repo.repo}"
-                       style="display:inline-block;margin-top:10px;padding:10px 16px;background:#2ecc71;color:#fff;text-decoration:none;border-radius:8px;font-weight:bold">
+                       style="
+                         display:inline-block;
+                         margin-top:10px;
+                         padding:10px 16px;
+                         background:#2ecc71;
+                         color:#fff;
+                         text-decoration:none;
+                         border-radius:10px;
+                         font-weight:bold;
+                       ">
                       📦 Open Blender-Works
                     </a>
+
                   </div>
 
                   <h3>📦 Submodules</h3>
 
-                  ${hasChanges ? items : `
-                    <div style="background:#fff;padding:14px;border-radius:10px;text-align:center;color:#999">
-                      ✨ No updates detected
-                    </div>
-                  `}
+                  ${
+                    hasChanges
+                      ? items
+                      : `
+                        <div style="
+                          background:#fff;
+                          padding:14px;
+                          border-radius:12px;
+                          text-align:center;
+                          color:#999;
+                          box-shadow:0 2px 6px rgba(0,0,0,0.08)
+                        ">
+                          ✨ No updates detected
+                        </div>
+                      `
+                  }
 
-                  <p style="text-align:center;color:#aaa;font-size:12px;margin-top:30px">
+                  <p style="
+                    text-align:center;
+                    color:#aaa;
+                    font-size:12px;
+                    margin-top:30px
+                  ">
                     GitHub Actions Auto Dashboard
                   </p>
 
