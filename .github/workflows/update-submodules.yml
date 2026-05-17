@@ -1,3 +1,4 @@
+```yaml
 name: Update Submodules
 
 on:
@@ -26,11 +27,12 @@ jobs:
 
       - name: Check for changes
         id: changes
+        shell: bash
         run: |
-          if [[ -n $(git status --porcelain) ]]; then
-            echo "changed=true" >> $GITHUB_OUTPUT
+          if [[ -n "$(git status --porcelain)" ]]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
           else
-            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "changed=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Commit changes
@@ -40,10 +42,9 @@ jobs:
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
           git add .
-          git commit -m "🔄 Auto update submodules"
+          git commit -m "Auto update submodules" || echo "No changes to commit"
 
       - name: Push changes
         if: steps.changes.outputs.changed == 'true'
-        run: |
-          git push
+        run: git push
 ```
