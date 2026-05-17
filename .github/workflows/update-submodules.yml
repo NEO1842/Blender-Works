@@ -92,10 +92,10 @@ jobs:
                 return `
                   <div style="
                     background:#fff;
-                    padding:14px;
+                    padding:16px;
                     margin:12px 0;
                     border-radius:12px;
-                    box-shadow:0 2px 6px rgba(0,0,0,0.06);
+                    box-shadow:0 2px 6px rgba(0,0,0,0.08);
                     border:1px solid #eee;
                   ">
 
@@ -158,28 +158,6 @@ jobs:
                     🚦 Status: ${hasChanges ? 'UPDATED' : 'NO CHANGES'}
                   </div>
 
-                  <div style="
-                    background:#fff;
-                    padding:16px;
-                    border-radius:12px;
-                    margin:15px 0;
-                    box-shadow:0 2px 6px rgba(0,0,0,0.08)
-                  ">
-                    <a href="https://github.com/${context.repo.owner}/${context.repo.repo}"
-                       style="
-                         display:inline-block;
-                         margin-top:10px;
-                         padding:10px 16px;
-                         background:#2ecc71;
-                         color:#fff;
-                         text-decoration:none;
-                         border-radius:10px;
-                         font-weight:bold;
-                       ">
-                      📦 Open Blender-Works
-                    </a>
-                  </div>
-
                   <h3 style="
                     text-align:center;
                     font-size:22px;
@@ -191,12 +169,17 @@ jobs:
                   ${
                     hasChanges
                       ? items
-                      : `<div style="background:#fff;padding:14px;border-radius:12px;text-align:center;color:#999">
+                      : `<div style="background:#fff;padding:16px;border-radius:12px;text-align:center;color:#999">
                           ✨ No updates detected
                         </div>`
                   }
 
-                  <p style="text-align:center;color:#aaa;font-size:12px;margin-top:30px">
+                  <p style="
+                    text-align:center;
+                    color:#aaa;
+                    font-size:12px;
+                    margin-top:30px
+                  ">
                     GitHub Actions Auto Dashboard
                   </p>
 
