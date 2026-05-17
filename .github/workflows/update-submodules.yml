@@ -20,57 +20,55 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
+      # 📦 before snapshot（実在submoduleのみ）
+      - name: Capture before state
+        run: git submodule status --recursive > before.txt
+
+      # 🔄 update
       - name: Update submodules
         run: git submodule update --init --recursive --remote
 
-      # 📌 実在submoduleだけ取得（これが重要）
-      - name: Capture submodule state (before)
-        run: git submodule status --recursive > before.txt
-
-      - name: Update again (safe refresh)
-        run: git submodule update --init --recursive --remote
-
-      - name: Capture submodule state (after)
+      # 📦 after snapshot
+      - name: Capture after state
         run: git submodule status --recursive > after.txt
 
-      # 📌 差分生成（正確版）
-      - name: Generate diff report
+      # 🧠 diff生成（完全安定版）
+      - name: Generate report
         id: report
         shell: bash
         run: |
+          REPORT=""
+
+          while read -r oldLine && read -r newLine <&3; do
+            oldCommit=$(echo $oldLine | awk '{print $1}')
+            newCommit=$(echo $newLine | awk '{print $1}')
+            path=$(echo $newLine | awk '{print $2}')
+
+            if [[ "$oldCommit" != "$newCommit" && "$oldCommit" != "" ]]; then
+              REPORT+="<div style='background:#fff;padding:14px;margin:10px 0;border-radius:10px;box-shadow:0 2px 6px rgba(0,0,0,0.08)'>"
+              REPORT+="📦 <b>$path</b><br/>"
+              REPORT+="🔄 <code>${oldCommit:0:7}</code> → <code>${newCommit:0:7}</code><br/>"
+              REPORT+="</div>"
+            fi
+
+          done < before.txt 3< after.txt
+
           echo "REPORT<<EOF" >> $GITHUB_OUTPUT
-
-          awk '
-          FNR==NR {before[$2]=$1; next}
-          {
-            path=$2
-            old=before[path]
-            new=$1
-
-            if (old != "" && old != new) {
-              old7=substr(old,1,7)
-              new7=substr(new,1,7)
-
-              echo "<div style=\"background:#fff;padding:14px;margin:10px 0;border-radius:10px;box-shadow:0 2px 6px rgba(0,0,0,0.08)\">"
-              echo "📦 <b>" path "</b><br/>"
-              echo "🔄 <code>" old7 "</code> → <code>" new7 "</code><br/>"
-              echo "</div>"
-            }
-          }' before.txt after.txt >> $GITHUB_OUTPUT
-
+          echo "$REPORT" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-      # 📌 変更有無判定（シンプルで安全）
+      # 📊 状態判定（安全版）
       - name: Detect changes
         id: changes
+        shell: bash
         run: |
-          if grep -q "→" <<< "${{ steps.report.outputs.REPORT }}"; then
+          if [[ -n "${{ steps.report.outputs.REPORT }}" ]]; then
             echo "changed=true" >> $GITHUB_OUTPUT
           else
             echo "changed=false" >> $GITHUB_OUTPUT
           fi
 
-      # 📌 commit & push（変更時のみ）
+      # 💾 commit & push（変更時のみ）
       - name: Commit changes
         if: steps.changes.outputs.changed == 'true'
         run: |
@@ -81,7 +79,7 @@ jobs:
           git commit -m "🔄 Auto update submodules"
           git push
 
-      # 📌 メール送信（完成UI）
+      # 💌 メール送信（完成UI）
       - name: Send mail
         if: steps.changes.outputs.changed == 'true'
         uses: actions/github-script@v7
@@ -93,7 +91,7 @@ jobs:
           script: |
             const nodemailer = require("nodemailer");
 
-            const hasChanges = process.env.REPORT && process.env.REPORT.includes("→");
+            const hasChanges = !!process.env.REPORT;
 
             const html = `
             <div style="font-family:Arial;background:#f6f7fb;padding:20px">
@@ -108,17 +106,13 @@ jobs:
                     </b>
                   </p>
 
-                  <p>
-                    🔗 <a href="https://github.com/${context.repo.owner}/${context.repo.repo}">
-                      Open Blender-Works Repository
-                    </a>
-                  </p>
+                  <p>🔗 <a href="https://github.com/${context.repo.owner}/${context.repo.repo}">
+                    Open Repository
+                  </a></p>
 
-                  <p>
-                    ⚙️ <a href="https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}">
-                      Open Workflow Run
-                    </a>
-                  </p>
+                  <p>⚙️ <a href="https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}">
+                    Open Workflow Run
+                  </a></p>
                 </div>
 
                 <h3>📦 Submodules</h3>
