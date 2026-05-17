@@ -129,7 +129,7 @@ View Project.<br>
 <tr>
 <td align="center" style="padding:20px;">
 <a href="https://github.com/NEO1842/Blender-Crystal">
-<img src="./Catalog%20image/Crystal.png.png" width="350">
+<img src="./Catalog%20image/Crystal.png" width="350">
 </a>
 <br>
 <b>Crystal</b><br>
