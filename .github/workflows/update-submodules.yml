@@ -46,4 +46,3 @@ jobs:
       - name: Push changes
         if: steps.changes.outputs.changed == 'true'
         run: git push
-```
