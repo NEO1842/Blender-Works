@@ -20,19 +20,19 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      # 📦 before snapshot（実在submoduleのみ）
+      # 📦 BEFORE
       - name: Capture before state
         run: git submodule status --recursive > before.txt
 
-      # 🔄 update
+      # 🔄 UPDATE
       - name: Update submodules
         run: git submodule update --init --recursive --remote
 
-      # 📦 after snapshot
+      # 📦 AFTER
       - name: Capture after state
         run: git submodule status --recursive > after.txt
 
-      # 🧠 diff生成（完全安定版）
+      # 🧠 DIFF生成（完全安定版）
       - name: Generate report
         id: report
         shell: bash
@@ -45,10 +45,19 @@ jobs:
             path=$(echo $newLine | awk '{print $2}')
 
             if [[ "$oldCommit" != "$newCommit" && "$oldCommit" != "" ]]; then
-              REPORT+="<div style='background:#fff;padding:14px;margin:10px 0;border-radius:10px;box-shadow:0 2px 6px rgba(0,0,0,0.08)'>"
-              REPORT+="📦 <b>$path</b><br/>"
-              REPORT+="🔄 <code>${oldCommit:0:7}</code> → <code>${newCommit:0:7}</code><br/>"
-              REPORT+="</div>"
+              REPORT+="
+<div style='background:#fff;padding:14px;margin:10px 0;border-radius:10px;box-shadow:0 2px 6px rgba(0,0,0,0.08)'>
+
+📦 <b>$path</b><br/>
+
+🔄 <code>${oldCommit:0:7}</code> → <code>${newCommit:0:7}</code><br/>
+
+<a href='https://github.com/$path'
+   style='display:inline-block;margin-top:8px;padding:6px 12px;background:#3498db;color:#fff;text-decoration:none;border-radius:6px;font-size:12px'>
+   🔗 Open Submodule
+</a>
+
+</div>"
             fi
 
           done < before.txt 3< after.txt
@@ -57,7 +66,7 @@ jobs:
           echo "$REPORT" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-      # 📊 状態判定（安全版）
+      # 📊 CHANGE判定
       - name: Detect changes
         id: changes
         shell: bash
@@ -68,7 +77,7 @@ jobs:
             echo "changed=false" >> $GITHUB_OUTPUT
           fi
 
-      # 💾 commit & push（変更時のみ）
+      # 💾 commit
       - name: Commit changes
         if: steps.changes.outputs.changed == 'true'
         run: |
@@ -79,7 +88,7 @@ jobs:
           git commit -m "🔄 Auto update submodules"
           git push
 
-      # 💌 メール送信（完成UI）
+      # 💌 MAIL（All-Task風ダッシュボードUI）
       - name: Send mail
         if: steps.changes.outputs.changed == 'true'
         uses: actions/github-script@v7
@@ -99,26 +108,36 @@ jobs:
 
                 <h2 style="text-align:center">🔄 Submodule Update Report</h2>
 
+                <!-- STATUS CARD -->
                 <div style="background:#fff;padding:16px;border-radius:10px;margin:15px 0;box-shadow:0 2px 6px rgba(0,0,0,0.08)">
+
                   <p>🚦 Status:
                     <b style="color:${hasChanges ? '#2ecc71' : '#999'}">
                       ${hasChanges ? 'UPDATED' : 'NO CHANGES'}
                     </b>
                   </p>
 
-                  <p>🔗 <a href="https://github.com/${context.repo.owner}/${context.repo.repo}">
-                    Open Repository
-                  </a></p>
+                  <!-- MAIN BUTTON -->
+                  <a href="https://github.com/${context.repo.owner}/${context.repo.repo}"
+                     style="
+                       display:inline-block;
+                       margin-top:10px;
+                       padding:10px 16px;
+                       background:#2ecc71;
+                       color:#fff;
+                       text-decoration:none;
+                       border-radius:8px;
+                       font-weight:bold;
+                     ">
+                    📦 Open Blender-Works
+                  </a>
 
-                  <p>⚙️ <a href="https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}">
-                    Open Workflow Run
-                  </a></p>
                 </div>
 
                 <h3>📦 Submodules</h3>
 
                 ${hasChanges ? process.env.REPORT : `
-                  <div style="background:#fff;padding:14px;border-radius:10px;text-align:center;color:#999">
+                  <div style="background:#fff;padding:14px;border-radius:10px;text-align:center;color:#999;box-shadow:0 2px 6px rgba(0,0,0,0.08)">
                     ✨ No updates detected
                   </div>
                 `}
