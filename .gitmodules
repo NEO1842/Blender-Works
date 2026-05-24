@@ -33,3 +33,6 @@
 [submodule "Blender-Crystal"]
 	path = Blender-Crystal
 	url = https://github.com/NEO1842/Blender-Crystal
+[submodule "Blender-Magic-Circle"]
+	path = Blender-Magic-Circle
+	url = https://github.com/NEO1842/Blender-Magic-Circle
