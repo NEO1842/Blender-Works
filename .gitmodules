@@ -36,3 +36,6 @@
 [submodule "Blender-Magic-Circle"]
 	path = Blender-Magic-Circle
 	url = https://github.com/NEO1842/Blender-Magic-Circle
+[submodule "Blender-Burger-Scene"]
+	path = Blender-Burger-Scene
+	url = https://github.com/NEO1842/Blender-Burger-Scene
