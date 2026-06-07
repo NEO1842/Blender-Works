@@ -39,3 +39,6 @@
 [submodule "Blender-Burger-Scene"]
 	path = Blender-Burger-Scene
 	url = https://github.com/NEO1842/Blender-Burger-Scene
+[submodule "Blender-Pancake-Scene"]
+	path = Blender-Pancake-Scene
+	url = https://github.com/NEO1842/Blender-Pancake-Scene
