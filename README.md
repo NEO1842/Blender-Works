@@ -147,7 +147,8 @@ View Project.<br>
     プロジェクトを見る<br><br>
   </td>
 </tr>
-<td align="center" style="padding:20px;">
+<tr>
+  <td align="center" style="padding:20px;">
     <a href="https://github.com/NEO1842/Blender-Burger-Scene">
       <img src="./Catalog image/Burger Scene.png" width="350">
     </a>
@@ -156,10 +157,8 @@ View Project.<br>
     View Project.<br>
     プロジェクトを見る<br><br>
   </td>
-</tr>
 
-</tr>
-<td align="center" style="padding:20px;">
+  <td align="center" style="padding:20px;">
     <a href="https://github.com/NEO1842/Blender-Pancake-Scene">
       <img src="./Catalog image/Pancake Scene.png" width="350">
     </a>
