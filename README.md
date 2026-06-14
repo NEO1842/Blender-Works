@@ -168,7 +168,16 @@ View Project.<br>
     プロジェクトを見る<br><br>
   </td>
 </tr>
-
+  <td align="center" style="padding:20px;">
+    <a href="https://github.com/NEO1842/Blender-Classic-Pudding">
+      <img src="./Catalog image/Classic Pudding.png" width="350">
+    </a>
+    <br>
+    <b>Pancake Scene</b><br>
+    View Project.<br>
+    プロジェクトを見る<br><br>
+  </td>
+</tr>
 </table>
 
 </div>
