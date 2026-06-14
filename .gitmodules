@@ -42,3 +42,6 @@
 [submodule "Blender-Pancake-Scene"]
 	path = Blender-Pancake-Scene
 	url = https://github.com/NEO1842/Blender-Pancake-Scene
+[submodule "Blender-Classic-Pudding"]
+	path = Blender-Classic-Pudding
+	url = https://github.com/NEO1842/Blender-Classic-Pudding
